@@ -25,10 +25,12 @@
         const db = getDatabase(app);
 
         // Fetch data in real-time
-        const dataRef = ref(db, "https://printer-vendo-default-rtdb.firebaseio.com/"); // Change this path based on your Firebase structure
+        const dataRef = ref(db, "/printer_data");
+
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
-            document.getElementById("output").innerHTML = JSON.stringify(data, null, 2);
+            console.log(data);  // Check in browser console
+            document.getElementById("output").textContent = JSON.stringify(data, null, 2);
         });
     </script>
 </head>
