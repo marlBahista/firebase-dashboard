@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase Dashboard</title>
+    <title>Printing Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
-        // Import Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase Configuration (Replace with your Firebase details)
         const firebaseConfig = {
             apiKey: "AIzaSyBFGCOyIkwMz0v9CvVQJvcXmGlQwHIcvpQ",
             authDomain: "printer-vendo.firebaseapp.com",
@@ -20,22 +19,102 @@
             appId: "1:219299793349:web:9ff3897d420f2a5e49a3ac"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
-        // Fetch data in real-time
         const dataRef = ref(db, "/printer_data");
 
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
-            console.log(data);  // Check in browser console
-            document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+            document.getElementById("coins").innerText = `$${data.coins_inserted}.00`;
+            document.getElementById("papers").innerText = data.papers_remaining;
+            document.getElementById("transactions").innerText = data.transaction_history.length;
+
+            // Ink levels
+            const inkLevels = {
+                "Black": 45, "Cyan": 75, "Magenta": 60, "Yellow": 85
+            };
+            Object.entries(inkLevels).forEach(([color, value]) => {
+                document.getElementById(`${color.toLowerCase()}-bar`).style.width = `${value}%`;
+                document.getElementById(`${color.toLowerCase()}-text`).innerText = `${value}%`;
+            });
+
+            // Transaction History
+            const historyTable = document.getElementById("transaction-history");
+            historyTable.innerHTML = "";
+            data.transaction_history.forEach(txn => {
+                historyTable.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-2">2025-03-14</td>
+                        <td class="p-2">08:06:49</td>
+                        <td class="p-2">10</td>
+                        <td class="p-2 text-right">$100.00</td>
+                    </tr>
+                `;
+            });
         });
     </script>
 </head>
-<body>
-    <h1>Firebase Realtime Dashboard</h1>
-    <pre id="output">Loading data...</pre>
+<body class="bg-gray-100 p-6">
+    <h1 class="text-2xl font-bold mb-4">Printing Dashboard</h1>
+
+    <div class="grid grid-cols-3 gap-4">
+        <div class="p-4 bg-white shadow rounded">
+            <p class="text-gray-600">Total Coins Inserted</p>
+            <p class="text-2xl font-semibold" id="coins">$0.00</p>
+        </div>
+        <div class="p-4 bg-white shadow rounded">
+            <p class="text-gray-600">Sheets Available</p>
+            <p class="text-2xl font-semibold" id="papers">0</p>
+        </div>
+        <div class="p-4 bg-white shadow rounded">
+            <p class="text-gray-600">Total Transactions</p>
+            <p class="text-2xl font-semibold" id="transactions">0</p>
+        </div>
+    </div>
+
+    <div class="mt-6 p-4 bg-white shadow rounded">
+        <h2 class="text-lg font-semibold mb-2">Transaction History</h2>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b">
+                    <th class="p-2">Date</th>
+                    <th class="p-2">Time</th>
+                    <th class="p-2">Pages</th>
+                    <th class="p-2 text-right">Cost</th>
+                </tr>
+            </thead>
+            <tbody id="transaction-history"></tbody>
+        </table>
+    </div>
+
+    <div class="mt-6 p-4 bg-white shadow rounded">
+        <h2 class="text-lg font-semibold mb-2">Ink Levels</h2>
+        <div class="space-y-2">
+            <div>
+                <p>Black <span id="black-text">0%</span></p>
+                <div class="w-full bg-gray-200 h-3 rounded">
+                    <div id="black-bar" class="bg-black h-3 rounded"></div>
+                </div>
+            </div>
+            <div>
+                <p>Cyan <span id="cyan-text">0%</span></p>
+                <div class="w-full bg-gray-200 h-3 rounded">
+                    <div id="cyan-bar" class="bg-blue-500 h-3 rounded"></div>
+                </div>
+            </div>
+            <div>
+                <p>Magenta <span id="magenta-text">0%</span></p>
+                <div class="w-full bg-gray-200 h-3 rounded">
+                    <div id="magenta-bar" class="bg-pink-500 h-3 rounded"></div>
+                </div>
+            </div>
+            <div>
+                <p>Yellow <span id="yellow-text">0%</span></p>
+                <div class="w-full bg-gray-200 h-3 rounded">
+                    <div id="yellow-bar" class="bg-yellow-500 h-3 rounded"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
