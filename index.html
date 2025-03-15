@@ -25,29 +25,32 @@
 
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
+            if (!data) return; // Prevent errors if data is null
+
+            // Update text values
             document.getElementById("coins").innerText = `$${data.coins_inserted}.00`;
             document.getElementById("papers").innerText = data.papers_remaining;
             document.getElementById("transactions").innerText = data.transaction_history.length;
 
-            // Ink levels
-            const inkLevels = {
-                "Black": 45, "Cyan": 75, "Magenta": 60, "Yellow": 85
-            };
-            Object.entries(inkLevels).forEach(([color, value]) => {
-                document.getElementById(`${color.toLowerCase()}-bar`).style.width = `${value}%`;
-                document.getElementById(`${color.toLowerCase()}-text`).innerText = `${value}%`;
-            });
+            // 🔥 Fix: Access ink levels properly from Firebase
+            if (data.ink_levels) {
+                Object.entries(data.ink_levels).forEach(([color, value]) => {
+                    const colorLower = color.toLowerCase();
+                    document.getElementById(`${colorLower}-bar`).style.width = value;
+                    document.getElementById(`${colorLower}-text`).innerText = value;
+                });
+            }
 
             // Transaction History
             const historyTable = document.getElementById("transaction-history");
-            historyTable.innerHTML = "";
+            historyTable.innerHTML = ""; // Clear table before updating
             data.transaction_history.forEach(txn => {
                 historyTable.innerHTML += `
                     <tr class="border-b">
-                        <td class="p-2">2025-03-14</td>
-                        <td class="p-2">08:06:49</td>
-                        <td class="p-2">10</td>
-                        <td class="p-2 text-right">$100.00</td>
+                        <td class="p-2">${txn.date}</td>
+                        <td class="p-2">${txn.time}</td>
+                        <td class="p-2">${txn.pages}</td>
+                        <td class="p-2 text-right">${txn.cost}</td>
                     </tr>
                 `;
             });
