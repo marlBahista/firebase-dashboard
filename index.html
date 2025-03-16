@@ -28,32 +28,35 @@
             if (!data) return; // Prevent errors if data is null
 
             // Update text values
-            document.getElementById("coins").innerText = `$${data.coins_inserted}.00`;
-            document.getElementById("papers").innerText = data.papers_remaining;
-            document.getElementById("transactions").innerText = data.transaction_history.length;
+            document.getElementById("coins").innerText = `$${data.coins_inserted || 0}.00`;
+            document.getElementById("papers").innerText = data.papers_remaining || 0;
+            document.getElementById("transactions").innerText = data.transaction_history ? data.transaction_history.length : 0;
 
-            // 🔥 Fix: Access ink levels properly from Firebase
+            // 🔥 Corrected: Properly update ink levels as percentage
             if (data.ink_levels) {
                 Object.entries(data.ink_levels).forEach(([color, value]) => {
                     const colorLower = color.toLowerCase();
-                    document.getElementById(`${colorLower}-bar`).style.width = value;
-                    document.getElementById(`${colorLower}-text`).innerText = value;
+                    const percentage = Math.max(0, Math.min(100, parseFloat(value))) + "%"; // Ensure value is between 0-100%
+                    document.getElementById(`${colorLower}-bar`).style.width = percentage;
+                    document.getElementById(`${colorLower}-text`).innerText = percentage;
                 });
             }
 
             // Transaction History
             const historyTable = document.getElementById("transaction-history");
             historyTable.innerHTML = ""; // Clear table before updating
-            data.transaction_history.forEach(txn => {
-                historyTable.innerHTML += `
-                    <tr class="border-b">
-                        <td class="p-2">${txn.date}</td>
-                        <td class="p-2">${txn.time}</td>
-                        <td class="p-2">${txn.pages}</td>
-                        <td class="p-2 text-right">${txn.cost}</td>
-                    </tr>
-                `;
-            });
+            if (data.transaction_history) {
+                data.transaction_history.forEach(txn => {
+                    historyTable.innerHTML += `
+                        <tr class="border-b">
+                            <td class="p-2">${txn.date}</td>
+                            <td class="p-2">${txn.time}</td>
+                            <td class="p-2">${txn.pages}</td>
+                            <td class="p-2 text-right">${txn.cost}</td>
+                        </tr>
+                    `;
+                });
+            }
         });
     </script>
 </head>
@@ -96,25 +99,25 @@
             <div>
                 <p>Black <span id="black-text">0%</span></p>
                 <div class="w-full bg-gray-200 h-3 rounded">
-                    <div id="black-bar" class="bg-black h-3 rounded"></div>
+                    <div id="black-bar" class="bg-black h-3 rounded w-0"></div>
                 </div>
             </div>
             <div>
                 <p>Cyan <span id="cyan-text">0%</span></p>
                 <div class="w-full bg-gray-200 h-3 rounded">
-                    <div id="cyan-bar" class="bg-blue-500 h-3 rounded"></div>
+                    <div id="cyan-bar" class="bg-blue-500 h-3 rounded w-0"></div>
                 </div>
             </div>
             <div>
                 <p>Magenta <span id="magenta-text">0%</span></p>
                 <div class="w-full bg-gray-200 h-3 rounded">
-                    <div id="magenta-bar" class="bg-pink-500 h-3 rounded"></div>
+                    <div id="magenta-bar" class="bg-pink-500 h-3 rounded w-0"></div>
                 </div>
             </div>
             <div>
                 <p>Yellow <span id="yellow-text">0%</span></p>
                 <div class="w-full bg-gray-200 h-3 rounded">
-                    <div id="yellow-bar" class="bg-yellow-500 h-3 rounded"></div>
+                    <div id="yellow-bar" class="bg-yellow-500 h-3 rounded w-0"></div>
                 </div>
             </div>
         </div>
