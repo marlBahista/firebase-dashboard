@@ -56,6 +56,20 @@ def log_message(message):
     log_box.config(state=tk.DISABLED)
     print(message)
 
+# Function to clear print queue
+def clear_print_queue():
+    """Clears all pending print jobs for the specified printer."""
+    log_message("🗑️ Clearing print queue...")
+    try:
+        printer_handle = win32print.OpenPrinter(PRINTER_NAME)
+        jobs = win32print.EnumJobs(printer_handle, 0, -1, 1)
+        for job in jobs:
+            win32print.SetJob(printer_handle, job["JobId"], 0, None, win32print.JOB_CONTROL_CANCEL)
+        win32print.ClosePrinter(printer_handle)
+        log_message("✅ Print queue cleared successfully.")
+    except Exception as e:
+        log_message(f"❌ Error clearing print queue: {e}")
+
 # Connect to ESP32
 def connect_to_esp32():
     global ser
@@ -172,6 +186,7 @@ def monitor_printing():
         check_ink_levels()
 
     update_firebase(inserted_coins, remaining_paper, {"pages": pages_used, "cost": total_cost})
+    clear_print_queue()
     set_printer_offline()
     update_paper_status()
     root.after(1000, reset_transaction)
@@ -212,6 +227,7 @@ def main_loop():
     root.after(2000, main_loop)
 
 log_message("🚀 Printer Vendo System Starting...")
+clear_print_queue()
 set_printer_offline()
 root.after(2000, main_loop)
 root.mainloop()
