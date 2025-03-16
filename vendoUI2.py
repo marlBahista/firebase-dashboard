@@ -8,17 +8,18 @@ import tkinter as tk
 import threading
 import subprocess
 import json
-from tkinter import scrolledtext
+from tkinter import scrolledtext, simpledialog
 from sendDataToFirebase2 import update_firebase
+from firebase_admin import db  # Import Firebase Realtime Database
 
 # Constants
 BW_COST_PER_PAGE = 5  
-# PRINTER_NAME = "EPSON L360 Series"
 PRINTER_NAME = "EPSON L4160 Series"
 ESP32_PORT = "COM4"
-PAPER_FEED_CAPACITY = 20  
+PAPER_FEED_CAPACITY = 40  
 LOW_PAPER_THRESHOLD = 5  
 INK_CHECK_THRESHOLD = 3  
+OWNER_PASSWORD = "admin123" 
 
 # Global Variables
 remaining_paper = PAPER_FEED_CAPACITY  
@@ -39,14 +40,29 @@ if not is_admin():
     ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
     sys.exit()
 
+# Fetch paper count from Firebase on startup
+def fetch_paper_from_firebase():
+    global remaining_paper
+    try:
+        paper_data = db.reference("papers_remaining").get()
+        if paper_data is not None:
+            remaining_paper = int(paper_data)
+            log_message(f"✅ Paper count synced from Firebase: {remaining_paper}")
+        else:
+            log_message("⚠️ No paper count data found in Firebase. Using default.")
+    except Exception as e:
+        log_message(f"❌ Error fetching paper count: {e}")
+
 # UI Setup
 root = tk.Tk()
-root.title("Printer Vendo System")
-root.geometry("500x500")
+root.title("VendoPrint V2.0")
+root.geometry("530x270")
+root.resizable(True, True)
+root.attributes('-topmost', True)
 
-# Log Display
-log_box = scrolledtext.ScrolledText(root, width=60, height=15, state=tk.DISABLED)
-log_box.pack(pady=10)
+# Log Box (Left Side)
+log_box = scrolledtext.ScrolledText(root, width=60, height=6, state=tk.DISABLED)
+log_box.grid(row=0, column=0, columnspan=3, padx=10, pady=5, sticky="w")
 
 def log_message(message):
     """Logs messages in the UI and console."""
@@ -55,6 +71,57 @@ def log_message(message):
     log_box.see(tk.END)
     log_box.config(state=tk.DISABLED)
     print(message)
+
+# Function to Open Settings
+def open_settings():
+    global remaining_paper
+    password = simpledialog.askstring("Admin Login", "Enter password:", show='*')
+    if password == OWNER_PASSWORD:
+        new_paper = simpledialog.askinteger("Update Paper", "Enter new paper count:", minvalue=1)
+        if new_paper is not None:
+            remaining_paper = new_paper
+            update_paper_status()
+            log_message(f"✅ Paper count updated to {remaining_paper}")
+    else:
+        log_message("❌ Incorrect password!")
+
+# Settings Button
+settings_button = tk.Button(root, text="⚙️ Settings", command=open_settings, font=("Arial", 10, "bold"), padx=10)
+settings_button.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+
+# Status Labels (Right Side)
+cost_label = tk.Label(root, text="Waiting for print job...", font=("Arial", 10))
+cost_label.grid(row=1, column=2, padx=10, pady=5, sticky="e")
+
+coin_label = tk.Label(root, text="Coins Inserted: ₱0", font=("Arial", 10))
+coin_label.grid(row=2, column=2, padx=10, pady=5, sticky="e")
+
+paper_status_label = tk.Label(root, text=f"📄 Paper Remaining: {remaining_paper}", fg="blue", font=("Arial", 10, "bold"))
+paper_status_label.grid(row=3, column=2, padx=10, pady=5, sticky="e")
+
+# # Paper Status
+# paper_status_label = tk.Label(root, fg="blue")
+# paper_status_label.grid(row=2, column=2, pady=10)
+
+
+def update_paper_status():
+    paper_status_label.config(text=f"📄 Paper Remaining: {remaining_paper}")
+    update_firebase(inserted_coins, remaining_paper, {})
+    db.reference("papers_remaining").set(remaining_paper)  # Sync with Firebase
+
+
+
+# # Add settings button
+# settings_button = tk.Button(root, text="⚙️ Settings", command=open_settings)
+# settings_button.grid(row=1, column=1, padx=5, pady=5)
+
+
+# Fetch initial paper count from Firebase
+fetch_paper_from_firebase()
+update_paper_status()
+
+log_message("🚀 Printer Vendo System Starting...")
+update_firebase(inserted_coins, remaining_paper, {})
 
 # Function to clear print queue
 def clear_print_queue():
@@ -100,15 +167,15 @@ def connect_to_esp32():
 connect_to_esp32()
 
 # UI Components
-cost_label = tk.Label(root, text="Waiting for print job...")
-cost_label.pack(pady=10)
-coin_label = tk.Label(root, text="Coins Inserted: ₱0")
-coin_label.pack(pady=10)
-paper_status_label = tk.Label(root, text=f"📄 Paper Remaining: {remaining_paper}", fg="blue")
-paper_status_label.pack(pady=10)
+# cost_label = tk.Label(root, text="Waiting for print job...")
+# cost_label.grid(row=1, column=2, padx=5, pady=5)
+# coin_label = tk.Label(root, text="Coins Inserted: ₱0")
+# coin_label.grid(row=2, column=1, padx=5, pady=5) 
+# paper_status_label = tk.Label(root, text=f"📄 Paper Remaining: {remaining_paper}", fg="blue")
+# paper_status_label.pack(pady=10)
 
-def update_paper_status():
-    paper_status_label.config(text=f"📄 Paper Remaining: {remaining_paper}")
+# def update_paper_status():
+#     paper_status_label.config(text=f"📄 Paper Remaining: {remaining_paper}")
 
 def set_printer_offline():
     c = wmi.WMI()
