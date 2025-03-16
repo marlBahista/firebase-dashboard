@@ -52,10 +52,10 @@
                 });
             }
 
-            // Transaction History Table
+            // Transaction History Table (Latest first)
             const historyTable = document.getElementById("transaction-history");
             historyTable.innerHTML = ""; // Clear table before updating
-            validTransactions.forEach(txn => {
+            validTransactions.reverse().forEach(txn => {  // Reverse order for latest first
                 historyTable.innerHTML += `
                     <tr class="border-b">
                         <td class="p-2">${txn.date}</td>
