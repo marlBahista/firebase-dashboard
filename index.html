@@ -23,23 +23,23 @@
         const db = getDatabase(app);
         const dataRef = ref(db, "/printer_data");
 
-        let totalCoins = 0; // Accumulate total coins inserted
-
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
             if (!data) return; // Prevent errors if data is null
 
-            // Accumulate total coins
-            totalCoins += data.coins_inserted || 0;
+            // Filter valid transactions (exclude zero pages & zero cost)
+            const validTransactions = data.transaction_history 
+                ? data.transaction_history.filter(txn => txn.pages > 0 && txn.cost > 0)
+                : [];
+
+            // Compute total coins as sum of all valid transaction costs
+            const totalCoins = validTransactions.reduce((sum, txn) => sum + txn.cost, 0);
             document.getElementById("coins").innerText = `₱${totalCoins.toFixed(2)}`;
 
             // Update sheets available
             document.getElementById("papers").innerText = data.papers_remaining || 0;
 
             // Update total transactions
-            const validTransactions = data.transaction_history 
-                ? data.transaction_history.filter(txn => txn.pages > 0 && txn.cost > 0)
-                : [];
             document.getElementById("transactions").innerText = validTransactions.length;
 
             // 🔥 Corrected: Properly update ink levels as percentage
@@ -52,7 +52,7 @@
                 });
             }
 
-            // Transaction History (Exclude zero pages & zero cost)
+            // Transaction History Table
             const historyTable = document.getElementById("transaction-history");
             historyTable.innerHTML = ""; // Clear table before updating
             validTransactions.forEach(txn => {
