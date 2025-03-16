@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Printing Dashboard</title>
+    <title>VendoPrint Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -25,41 +25,35 @@
 
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
-            if (!data) return; // Prevent errors if data is null
+            if (!data) return;
 
-            // Filter valid transactions (exclude zero pages & zero cost)
             const validTransactions = data.transaction_history 
                 ? data.transaction_history.filter(txn => txn.pages > 0 && txn.cost > 0)
                 : [];
 
-            // Compute total coins as sum of all valid transaction costs
             const totalCoins = validTransactions.reduce((sum, txn) => sum + txn.cost, 0);
             document.getElementById("coins").innerText = `₱${totalCoins.toFixed(2)}`;
-
-            // Update sheets available
             document.getElementById("papers").innerText = data.papers_remaining || 0;
-
-            // Update total transactions
             document.getElementById("transactions").innerText = validTransactions.length;
 
-            // 🔥 Corrected: Properly update ink levels as percentage
             if (data.ink_levels) {
                 Object.entries(data.ink_levels).forEach(([color, value]) => {
                     const colorLower = color.toLowerCase();
-                    const percentage = Math.max(0, Math.min(100, parseFloat(value))) + "%"; // Ensure value is between 0-100%
+                    const percentage = Math.max(0, Math.min(100, parseFloat(value))) + "%";
                     document.getElementById(`${colorLower}-bar`).style.width = percentage;
                     document.getElementById(`${colorLower}-text`).innerText = percentage;
                 });
             }
 
-            // Transaction History Table (Latest first)
             const historyTable = document.getElementById("transaction-history");
-            historyTable.innerHTML = ""; // Clear table before updating
-            validTransactions.reverse().forEach(txn => {  // Reverse order for latest first
+            historyTable.innerHTML = "";
+            validTransactions.reverse().forEach(txn => {
+                const formattedDate = new Date(txn.date).toLocaleDateString("en-GB");
+                const formattedTime = new Date(`${txn.date}T${txn.time}`).toLocaleTimeString("en-US", {hour: '2-digit', minute: '2-digit', hour12: true});
                 historyTable.innerHTML += `
                     <tr class="border-b">
-                        <td class="p-2">${txn.date}</td>
-                        <td class="p-2">${txn.time}</td>
+                        <td class="p-2">${formattedDate}</td>
+                        <td class="p-2">${formattedTime}</td>
                         <td class="p-2">${txn.pages}</td>
                         <td class="p-2 text-right">₱${txn.cost.toFixed(2)}</td>
                     </tr>
@@ -69,7 +63,10 @@
     </script>
 </head>
 <body class="bg-gray-100 p-6">
-    <h1 class="text-2xl font-bold mb-4">Printing Dashboard</h1>
+    <div class="flex items-center space-x-4 mb-4">
+        <img src="VendoPrint%20LOGO.webp" alt="VendoPrint Logo" class="h-16">
+        <h1 class="text-2xl font-bold">VendoPrint Dashboard</h1>
+    </div>
 
     <div class="grid grid-cols-3 gap-4">
         <div class="p-4 bg-white shadow rounded">
